@@ -14,6 +14,7 @@ main = do
 
 data State = State
            { ret :: Bool
+           , exit :: Bool
            , ps1 :: String
            , esc :: Bool
            , text :: String
@@ -23,6 +24,7 @@ data State = State
 
 data Event = Return
         | AfterReturn
+        | Exit
 		| CharAt Int Char
 		| CursorTo Int
 		| Esc Bool
@@ -33,6 +35,7 @@ typableChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 initState :: State
 initState = State
 		{ ret = False
+		, exit = False
 		, ps1 = "> "
 		, esc = False
 		, text = ""
@@ -43,7 +46,7 @@ renderSep :: String
 renderSep = setCursorColumnCode 0 ++ clearLineCode
 
 cli :: String -> String
-cli = intercalate renderSep . map render . scanl process initState
+cli = intercalate renderSep . map render . takeWhile (not . exit) . scanl process initState
 
 process :: State -> Char -> State
 process state ch = foldl update state (events state ch)
@@ -74,6 +77,9 @@ events state@State
 			| ch == '\ESC' =
 				[ Esc True
 				]
+			| ch == '\n' && text == "exit" =
+				[ Exit
+				]
 			| ch == '\n' =
 				[ Return
 				]
@@ -89,6 +95,7 @@ update state (CursorTo pos) = state { pos = pos }
 update state (Esc v) = state { esc = v }
 update state (Return) = state { ret = True}
 update state (AfterReturn) = initState { ps1 = (ps1 state) }
+update state (Exit) = state { exit = True }
 
 render :: State -> String
 render state@State
