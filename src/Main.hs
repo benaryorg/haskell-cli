@@ -75,8 +75,7 @@ events state@State
 				[ Esc True
 				]
 			| ch == '\n' =
-				[
-					Return
+				[ Return
 				]
 			| ch `elem` typableChars =
 				[ CharAt pos ch
