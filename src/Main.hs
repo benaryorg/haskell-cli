@@ -10,7 +10,11 @@ main = do
 		hSetBuffering stdin NoBuffering
 		hSetBuffering stdout NoBuffering
 		hSetEcho stdin False
-		interact cli
+		ttyin <- hIsTerminalDevice stdin
+		interact $ cli $ state ttyin
+	where
+		state True = initState
+		state False = initState { ps1 = "" }
 
 data State = State
            { ret :: Bool
@@ -45,8 +49,8 @@ initState = State
 renderSep :: String
 renderSep = setCursorColumnCode 0 ++ clearLineCode
 
-cli :: String -> String
-cli = intercalate renderSep . map render . takeWhile (not . exit) . scanl process initState
+cli :: State -> String -> String
+cli state = intercalate renderSep . map render . takeWhile (not . exit) . scanl process state
 
 process :: State -> Char -> State
 process state ch = foldl update state (events state ch)
